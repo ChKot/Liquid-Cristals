@@ -4,9 +4,9 @@ import time
 import numpy as np
 import pandas as pd
 
-arduino = serial.Serial('COM9', 250000, timeout=1)
+arduino = serial.Serial('COM3', 250000, timeout=1)
 time.sleep(2)
-arduino.write('s9000000'.encode())
+arduino.write('s900000'.encode())
 time.sleep(2)
 data = np.array([0, 0])
 raw_data = []
@@ -20,11 +20,6 @@ while True:
         t = buff[2] | (buff[3] << 8) | (buff[4] << 16) | (buff[5] << 24)
         value = buff[0] | (buff[1] << 8)
         print(f'{t} -> {value}')
-        raw_data.append(value)
-        time_data.append(t)
-        filt_exp = filt_exp_last + teta * (value - filt_exp_last)
-        filt_exp_last = filt_exp
-        filt_data_exp.append(filt_exp)
         row = [int(t), int(value)]
         data = np.vstack([data, row])
     except IndexError:
@@ -34,15 +29,24 @@ while True:
 # plt.grid(linestyle='-', linewidth=1)
 # plt.show()
 
-columns = {'time_data': time_data, 'raw_data': raw_data, 'exp_filter': filt_data_exp}
-data_df = pd.DataFrame(columns)
 
-# plt.subplot (1, 1, 1)
-plt.plot(data_df['time_data'], data_df['raw_data'])
-plt.plot(data_df['time_data'], data_df['exp_filter'])
-plt.grid(linestyle='-', linewidth=1)
-plt.show()
+def exp_filter(data, teta):
+    y_last= 0
+    y = []
+    for i in range(np.shape(data)[0]):
+        if i == 1 or i == 0:
+            y.append(data[i, 1])
+            y_last= data[i, 1]
+        else:
+            y.append(y_last + teta * (data[i, 1] - y_last))
+            y_last = data[i, 1]
+    return y
+filtred_data = exp_filter(data, 0.3)
+data= np.column_stack([data, filtred_data])
+print(data)
+print(data[1])
+print(np.shape(data))
 
-# t = time.localtime()
-# current_time = time.strftime("%H_%M_%S", t)
-# data_df.to_excel(f'./{current_time}.xlsx')
+t_name = time.localtime()
+name = time.strftime("%H_%M_%S", t_name)
+np.savetxt(f'./data/{name}.csv',data,delimiter=',', fmt='%s')
