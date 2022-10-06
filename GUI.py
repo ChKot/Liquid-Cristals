@@ -48,7 +48,6 @@ def start():    #btn_start command function
             buff = arduino.read(6)
             t = buff[2] | (buff[3] << 8) | (buff[4] << 16) | (buff[5] << 24)
             value = buff[0] | (buff[1] << 8)
-            #print(f'{t} -> {value}')
             row = [int(t), int(value)]
             data = np.vstack([data, row])
         except IndexError:
