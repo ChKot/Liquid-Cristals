@@ -4,14 +4,15 @@ import matplotlib.pyplot as plt
 import serial
 import time
 import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 #variables
-teta = 0.1
-duration = 1000000
-duration_txt = ''
+teta = 0.2
+duration = 90000
 data = np.array([0, 0])
 arduino = 0
+serialset=0
 
 def exp_filter(data_d, teta):
     y_last= 0
@@ -27,20 +28,24 @@ def exp_filter(data_d, teta):
 
 def save_settings():   #btn_set command function
     global teta
-    teta = ent_filter.get()
+    teta = float(ent_filter.get())
     global duration
-    duration = ent_time.get()*1000
+    duration = int(ent_time.get())*1000
     btn_set['text'] = 'Настройки сохранены'
 
 def start():    #btn_start command function
-    global duration_txt
     global arduino
     global duration
     global data
-    duration_txt = f's{duration}'
-    arduino = serial.Serial('COM3', 250000, timeout=1)
+    global teta
+    global serialset
+    global plot
+    data = np.array([0, 0])
+    if serialset==0:
+        arduino = serial.Serial('COM3', 250000, timeout=1)
+        serialset+=1
     time.sleep(2)
-    arduino.write(f'{duration_txt}'.encode())
+    arduino.write(f's{duration}'.encode())
     time.sleep(2)
 
     while True:
@@ -53,7 +58,7 @@ def start():    #btn_start command function
         except IndexError:
             break
 
-    filtred_data = exp_filter(data, 0.3)
+    filtred_data = exp_filter(data, teta)
     data = np.column_stack([data, filtred_data])
 
     t_name = time.localtime()
@@ -63,7 +68,11 @@ def start():    #btn_start command function
     plt.plot(data[:, 0], data[:, 1], '.-')
     plt.plot(data[:, 0], data[:, 2], '.-')
     plt.grid(linestyle='-', linewidth=1)
-    plt.show()
+    plt.savefig('./Figure_1.png')
+    plt.clf()
+    plot = tk.PhotoImage(file='./Figure_1.png')
+    lbl_plot['image'] = plot
+
 
 #tkinter window settings
 window = tk.Tk()
@@ -82,7 +91,7 @@ lbl_filter = tk.Label(master=frm_settings, text='Парамметр сглажи
 lbl_filter.grid(row=1, column=0)
 
 ent_time = tk.Entry(master=frm_settings)
-ent_time.insert(0, '1000')
+ent_time.insert(0, '90')
 ent_time.grid(row=0, column=1)
 
 ent_filter = tk.Entry(master=frm_settings)
@@ -101,6 +110,9 @@ btn_strat.grid(row=0, column=1, padx=5, pady=5)
 frm_plot = tk.Frame(master=window)
 frm_plot.grid(row=0, column=1, rowspan=2, columnspan=2)
 
+plt.plot()
+plt.savefig('./Figure_1.png')
+plt.clf()
 plot = tk.PhotoImage(file='./Figure_1.png')
 lbl_plot = tk.Label(master=frm_plot, image=plot)
 lbl_plot.pack()
