@@ -3,44 +3,78 @@ import serial
 import time
 import numpy as np
 
-def exp_filter(data, teta):
-    y_last = 0
+
+def mid_filter(data, N):
+    temp_arr = []
     y = []
+    for i in range(0, N):
+        temp_arr.append(0)
     for i in range(np.shape(data)[0]):
-        if i == 1 or i == 0:
-            y.append(data[i, 1])
-            y_last = data[i, 1]
+        for j in range(0, N-1):
+            temp_arr[j] = temp_arr[j+1]
+        temp_arr[N-1] = data[i, 1]
+        if i >= N:
+            y.append(sum(temp_arr)/N)
         else:
-            y.append(y_last + teta * (data[i, 1] - y_last))
-            y_last = data[i, 1]
+            y.append(data[i, 1])
     return y
 
-arduino = serial.Serial('COM3', 250000, timeout=1)
+# def med_filter(data, N):
+#     temp_arr = []
+#     temp_arr2 = []
+#     y = []
+#     for i in range(0, N):
+#         temp_arr.append(0)
+#     for i in range(np.shape(data)[0]):
+#         for j in range(0, N-1):
+#             temp_arr[j] = temp_arr[j+1]
+#         temp_arr[N-1] = data[i, 1]
+#         for j in range(0, N):
+#             temp_arr2[j] = temp_arr[j]
+#         temp_arr2.sort()
+#         if i >= N:
+#             if N % 2:
+#                 y.append((temp_arr2[N/2]+temp_arr2[(N/2)-1])/2)
+#             else:
+#                 y.append(temp_arr2[N])
+#         else:
+#             y.append(data[i, 1])
+#     return y
+
+arduino = serial.Serial('COM4', 1000000, timeout=1)
 time.sleep(2)
-arduino.write('s90000'.encode())
-time.sleep(2)
+arduino.write('s10000000'.encode())
+time.sleep(0.5)
+while not arduino.in_waiting:
+    time.sleep(0.01)
 data = np.array([0, 0])
+buff = []
 
 while True:
-    try:
-        buff = arduino.read(6)
-        t = buff[2] | (buff[3] << 8) | (buff[4] << 16) | (buff[5] << 24)
-        value = buff[0] | (buff[1] << 8)
-        print(f'{t} -> {value}')
-        row = [int(t), int(value)]
-        data = np.vstack([data, row])
-    except IndexError:
+    d_byte = arduino.read(6)
+    if d_byte:
+        buff.append(d_byte)
+    else:
         break
 
-filtred_data = exp_filter(data, 0.3)
-data= np.column_stack([data, filtred_data])
-print(data)
-print(data[1])
-print(np.shape(data))
+for i in buff:
+    t = int.from_bytes(i[2:], 'little')
+    value = int.from_bytes(i[:2], 'little')
+    print(f'{t} -> {value}')
+    row = [t, value]
+    data = np.vstack([data, row])
+
+filtred_data1 = mid_filter(data, 6)
+data= np.column_stack([data, filtred_data1])
+# filtred_data2 = med_filter(data, 6)
+# data= np.column_stack([data, filtred_data2])
+# print(data)
+# print(data[1])
+# print(np.shape(data))
 
 t_name = time.localtime()
 name = time.strftime("%H_%M_%S", t_name)
-np.savetxt(f'./data/{name}.csv',data,delimiter=',', fmt='%s')
+np.savetxt(f'./data/{name}.csv', data, delimiter=',', fmt='%s')
 
 plt.plot(data[:, 0], data[:, 1], '.-')
 plt.plot(data[:, 0], data[:, 2], '.-')

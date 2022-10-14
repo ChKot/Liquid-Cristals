@@ -1,4 +1,4 @@
-#define analogPin A0
+#define analogPin A7
 #define RelPin 5
 
 short analogValue;
@@ -8,14 +8,17 @@ String data_array[10];
 String command;
 
 void setup() {
-  Serial.begin(250000);
+  Serial.begin(1000000);
 
   Duration_AC = 100 * pow(10, 3); // ms
   Delay = 1 * pow(10, 3); // ms
   durationLimit  = Delay + (2 * Duration_AC); //ms
   
+  analogReference(DEFAULT);
   pinMode(RelPin, OUTPUT);
+  pinMode(analogPin, INPUT);
   digitalWrite(RelPin, LOW);
+  analogWrite(analogPin, 0);
 }
 
 void loop() {
