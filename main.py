@@ -41,7 +41,7 @@ def mid_filter(data, N):
 #             y.append(data[i, 1])
 #     return y
 
-arduino = serial.Serial('COM4', 1000000, timeout=1)
+arduino = serial.Serial('COM3', 1000000, timeout=1)
 time.sleep(2)
 arduino.write('s10000000'.encode())
 time.sleep(0.5)
@@ -64,7 +64,7 @@ for i in buff:
     row = [t, value]
     data = np.vstack([data, row])
 
-filtred_data1 = mid_filter(data, 6)
+filtred_data1 = mid_filter(data, 12)
 data= np.column_stack([data, filtred_data1])
 # filtred_data2 = med_filter(data, 6)
 # data= np.column_stack([data, filtred_data2])
