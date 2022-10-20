@@ -42,10 +42,10 @@ def med_filter(data, N):
             y.append(data[i, 1])
     return y
 
-arduino = serial.Serial('COM3', 1000000, timeout=1)
+arduino = serial.Serial('COM4', 1000000, timeout=1)
 time.sleep(2)
 arduino.write('s1000000'.encode())
-time.sleep(0.5)
+time.sleep(0.05)
 while not arduino.in_waiting:
     time.sleep(0.01)
 data = np.array([0, 0])
@@ -75,7 +75,13 @@ t_name = time.localtime()
 name = time.strftime("%H_%M_%S", t_name)
 np.savetxt(f'./data/{name}.csv', data, delimiter=',', fmt='%s')
 
+fig = plt.figure()
+ax_1 = fig.add_subplot(1, 1, 1)
 plt.plot(data[:, 0], data[:, 1], '.-')
 plt.plot(data[:, 0], data[:, 2], '.-')
+plt.grid(linestyle='-', linewidth=1)
+ax_2 = fig.add_subplot(1, 2, 2)
+plt.plot(data[:, 0], data[:, 1], '.-')
+plt.plot(data[:, 0], data[:, 3], '.-')
 plt.grid(linestyle='-', linewidth=1)
 plt.show()
