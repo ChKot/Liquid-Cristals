@@ -42,33 +42,35 @@ def med_filter(data, N):
             y.append(data[i, 1])
     return y
 
-arduino = serial.Serial('COM4', 1000000, timeout=1)
+arduino = serial.Serial('COM5', 1000000, timeout=1)     #тут поставить нужный компорт, но должен быть 5й
 time.sleep(2)
-arduino.write('s1000000'.encode())
+arduino.write('s1000000'.encode())          #то что после s - время процесса в мк секундах
 time.sleep(0.05)
 while not arduino.in_waiting:
     time.sleep(0.01)
-data = np.array([0, 0])
+data = np.array([0, 0, 0, 0])
 buff = []
 
 while True:
-    d_byte = arduino.read(6)
+    d_byte = arduino.read(8)
     if d_byte:
         buff.append(d_byte)
     else:
         break
 
 for i in buff:
-    t = int.from_bytes(i[2:], 'little')
+    t = int.from_bytes(i[4:], 'little')
     value = int.from_bytes(i[:2], 'little')
-    print(f'{t} -> {value}')
-    row = [t, value]
+    valueBtm = int.from_bytes(i[2:4], 'little')
+    diriv = valueBtm/value
+    print(f'{t} -> {value} -> {valueBtm}')
+    row = [t, value, valueBtm, diriv]
     data = np.vstack([data, row])
 
-filtred_data1 = mid_filter(data, 12)
-data= np.column_stack([data, filtred_data1])
-filtred_data2 = med_filter(data, 6)
-data= np.column_stack([data, filtred_data2])
+# filtred_data1 = mid_filter(data, 12)
+# data= np.column_stack([data, filtred_data1])
+# filtred_data2 = med_filter(data, 6)
+# data= np.column_stack([data, filtred_data2])
 
 
 t_name = time.localtime()
@@ -76,12 +78,6 @@ name = time.strftime("%H_%M_%S", t_name)
 np.savetxt(f'./data/{name}.csv', data, delimiter=',', fmt='%s')
 
 fig = plt.figure()
-ax_1 = fig.add_subplot(1, 1, 1)
 plt.plot(data[:, 0], data[:, 1], '.-')
 plt.plot(data[:, 0], data[:, 2], '.-')
-plt.grid(linestyle='-', linewidth=1)
-ax_2 = fig.add_subplot(1, 2, 2)
-plt.plot(data[:, 0], data[:, 1], '.-')
 plt.plot(data[:, 0], data[:, 3], '.-')
-plt.grid(linestyle='-', linewidth=1)
-plt.show()
